@@ -842,32 +842,259 @@ class HospitalizationPredictor:
         print("\n✅ Todos os modelos salvos com sucesso!")
     
     
-    def generate_summary_report(self):
+    def generate_analysis_report(self):
         """
-        Gera um relatório resumido dos resultados.
+        Gera um relatório completo com análise dos resultados.
+        
+        Este método:
+        1. Analisa os resultados de ambos os targets
+        2. Identifica os melhores modelos
+        3. Explica as visualizações geradas
+        4. Fornece conclusões e recomendações
         """
         print("\n" + "=" * 70)
-        print("📋 RELATÓRIO FINAL")
+        print("📊 GERANDO RELATÓRIO DE ANÁLISE")
         print("=" * 70)
         
-        print("\n✅ Pipeline completo executado com sucesso!")
-        print("\n📁 Arquivos gerados:")
-        print("   📊 Métricas:")
-        print("      - outputs/model_comparison_1year.csv")
-        print("      - outputs/model_comparison_3years.csv")
-        print("\n   📈 Visualizações:")
-        print("      - outputs/confusion_matrix_1year.png")
-        print("      - outputs/confusion_matrix_3years.png")
-        print("      - outputs/roc_curve_1year.png")
-        print("      - outputs/roc_curve_3years.png")
-        print("      - outputs/feature_importance_1year.png")
-        print("      - outputs/feature_importance_3years.png")
-        print("\n   🤖 Modelos:")
-        print("      - models/*.pkl (modelos treinados)")
+        # Carregar resultados
+        try:
+            results_1y = pd.read_csv('outputs/model_comparison_1year.csv')
+            results_3y = pd.read_csv('outputs/model_comparison_3years.csv')
+        except:
+            print("⚠️ Não foi possível carregar os resultados para análise.")
+            return
+        
+        # Criar relatório em markdown
+        report_lines = []
+        
+        # Cabeçalho
+        report_lines.append("# Relatório de Análise: Modelo Preditivo de Hospitalização\n")
+        report_lines.append(f"**Data de Geração**: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+        report_lines.append("**Autor**: Rafael Zanarino\n")
+        report_lines.append("---\n\n")
+        
+        # Sumário Executivo
+        report_lines.append("## 📋 Sumário Executivo\n\n")
+        report_lines.append("Este relatório apresenta os resultados da modelagem preditiva de hospitalização ")
+        report_lines.append("de pacientes idosos em dois horizontes temporais: **1 ano** e **3 anos**.\n\n")
+        
+        # Identificar melhores modelos
+        best_1y_idx = results_1y['Test_ROC_AUC'].idxmax()
+        best_1y_name = results_1y.loc[best_1y_idx, 'Modelo']
+        best_1y_auc = results_1y.loc[best_1y_idx, 'Test_ROC_AUC']
+        
+        best_3y_idx = results_3y['Test_ROC_AUC'].idxmax()
+        best_3y_name = results_3y.loc[best_3y_idx, 'Modelo']
+        best_3y_auc = results_3y.loc[best_3y_idx, 'Test_ROC_AUC']
+        
+        report_lines.append("### 🏆 Melhores Modelos\n\n")
+        report_lines.append(f"- **Hospitalização 1 ano**: {best_1y_name} (ROC-AUC: {best_1y_auc:.3f})\n")
+        report_lines.append(f"- **Hospitalização 3 anos**: {best_3y_name} (ROC-AUC: {best_3y_auc:.3f})\n\n")
+        
+        # Análise detalhada - 1 ano
+        report_lines.append("---\n\n")
+        report_lines.append("## 🎯 Análise: Predição de Hospitalização em 1 Ano\n\n")
+        
+        report_lines.append("### Comparação de Modelos\n\n")
+        report_lines.append("| Modelo | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Overfitting |\n")
+        report_lines.append("|--------|----------|-----------|--------|----------|---------|-------------|\n")
+        
+        for _, row in results_1y.iterrows():
+            overfit_status = "✅" if row['Overfit_Gap'] < 0.10 else ("⚡" if row['Overfit_Gap'] < 0.15 else "⚠️")
+            report_lines.append(f"| {row['Modelo']} | {row['Test_Accuracy']:.3f} | {row['Test_Precision']:.3f} | ")
+            report_lines.append(f"{row['Test_Recall']:.3f} | {row['Test_F1']:.3f} | {row['Test_ROC_AUC']:.3f} | ")
+            report_lines.append(f"{overfit_status} {row['Overfit_Gap']:.3f} |\n")
+        
+        report_lines.append("\n")
+        
+        # Interpretação do melhor modelo - 1 ano
+        report_lines.append(f"### 🔍 Análise do Melhor Modelo: {best_1y_name}\n\n")
+        
+        best_1y_row = results_1y.loc[best_1y_idx]
+        
+        report_lines.append(f"**Por que este modelo foi escolhido?**\n\n")
+        report_lines.append(f"O **{best_1y_name}** apresentou o melhor desempenho com ROC-AUC de **{best_1y_auc:.3f}**, ")
+        report_lines.append(f"indicando {'excelente' if best_1y_auc > 0.9 else ('muito boa' if best_1y_auc > 0.8 else ('boa' if best_1y_auc > 0.7 else 'razoável'))} ")
+        report_lines.append(f"capacidade de discriminação entre pacientes que serão e não serão hospitalizados.\n\n")
+        
+        report_lines.append(f"**Métricas de Performance:**\n\n")
+        report_lines.append(f"- **Accuracy**: {best_1y_row['Test_Accuracy']:.1%} - Proporção de predições corretas\n")
+        report_lines.append(f"- **Precision**: {best_1y_row['Test_Precision']:.1%} - Dos preditos como 'alto risco', {best_1y_row['Test_Precision']:.1%} realmente foram hospitalizados\n")
+        report_lines.append(f"- **Recall**: {best_1y_row['Test_Recall']:.1%} - Dos pacientes hospitalizados, {best_1y_row['Test_Recall']:.1%} foram corretamente identificados\n")
+        report_lines.append(f"- **F1-Score**: {best_1y_row['Test_F1']:.3f} - Balanço entre precision e recall\n\n")
+        
+        # Análise de overfitting
+        if best_1y_row['Overfit_Gap'] < 0.10:
+            report_lines.append(f"✅ **Generalização Excelente**: Gap de {best_1y_row['Overfit_Gap']:.3f} indica que o modelo generaliza bem para novos dados.\n\n")
+        elif best_1y_row['Overfit_Gap'] < 0.15:
+            report_lines.append(f"⚡ **Leve Overfitting**: Gap de {best_1y_row['Overfit_Gap']:.3f} sugere leve memorização dos dados de treino, mas ainda aceitável.\n\n")
+        else:
+            report_lines.append(f"⚠️ **Overfitting Detectado**: Gap de {best_1y_row['Overfit_Gap']:.3f} indica que o modelo pode estar memorizando os dados de treino.\n\n")
+        
+        # Análise detalhada - 3 anos
+        report_lines.append("---\n\n")
+        report_lines.append("## 🎯 Análise: Predição de Hospitalização em 3 Anos\n\n")
+        
+        report_lines.append("### Comparação de Modelos\n\n")
+        report_lines.append("| Modelo | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Overfitting |\n")
+        report_lines.append("|--------|----------|-----------|--------|----------|---------|-------------|\n")
+        
+        for _, row in results_3y.iterrows():
+            overfit_status = "✅" if row['Overfit_Gap'] < 0.10 else ("⚡" if row['Overfit_Gap'] < 0.15 else "⚠️")
+            report_lines.append(f"| {row['Modelo']} | {row['Test_Accuracy']:.3f} | {row['Test_Precision']:.3f} | ")
+            report_lines.append(f"{row['Test_Recall']:.3f} | {row['Test_F1']:.3f} | {row['Test_ROC_AUC']:.3f} | ")
+            report_lines.append(f"{overfit_status} {row['Overfit_Gap']:.3f} |\n")
+        
+        report_lines.append("\n")
+        
+        # Interpretação do melhor modelo - 3 anos
+        report_lines.append(f"### 🔍 Análise do Melhor Modelo: {best_3y_name}\n\n")
+        
+        best_3y_row = results_3y.loc[best_3y_idx]
+        
+        report_lines.append(f"**Por que este modelo foi escolhido?**\n\n")
+        report_lines.append(f"O **{best_3y_name}** apresentou o melhor desempenho com ROC-AUC de **{best_3y_auc:.3f}**, ")
+        report_lines.append(f"indicando {'excelente' if best_3y_auc > 0.9 else ('muito boa' if best_3y_auc > 0.8 else ('boa' if best_3y_auc > 0.7 else 'razoável'))} ")
+        report_lines.append(f"capacidade de discriminação.\n\n")
+        
+        report_lines.append(f"**Métricas de Performance:**\n\n")
+        report_lines.append(f"- **Accuracy**: {best_3y_row['Test_Accuracy']:.1%}\n")
+        report_lines.append(f"- **Precision**: {best_3y_row['Test_Precision']:.1%}\n")
+        report_lines.append(f"- **Recall**: {best_3y_row['Test_Recall']:.1%}\n")
+        report_lines.append(f"- **F1-Score**: {best_3y_row['Test_F1']:.3f}\n\n")
+        
+        # Explicação das Visualizações
+        report_lines.append("---\n\n")
+        report_lines.append("## 📊 Explicação das Visualizações\n\n")
+        
+        # Confusion Matrix
+        report_lines.append("### 1. Matrizes de Confusão\n\n")
+        report_lines.append("**Arquivos**: `confusion_matrix_1year.png` e `confusion_matrix_3years.png`\n\n")
+        report_lines.append("**O que mostram:**\n\n")
+        report_lines.append("As matrizes de confusão visualizam os acertos e erros de cada modelo:\n\n")
+        report_lines.append("```\n")
+        report_lines.append("                Predito\n")
+        report_lines.append("             Não Hosp.  Hosp.\n")
+        report_lines.append("Real  Não H.    TN       FP     ← Falsos Alarmes\n")
+        report_lines.append("      Hosp.     FN       TP     ← Casos Perdidos\n")
+        report_lines.append("```\n\n")
+        report_lines.append("- **TN (True Negative)**: Pacientes corretamente identificados como baixo risco\n")
+        report_lines.append("- **TP (True Positive)**: Pacientes corretamente identificados como alto risco\n")
+        report_lines.append("- **FP (False Positive)**: Falsos alarmes - preditos como alto risco mas não hospitalizados\n")
+        report_lines.append("- **FN (False Negative)**: Casos perdidos - não identificados mas foram hospitalizados\n\n")
+        report_lines.append("**Como interpretar**: Quanto maior os valores na diagonal (TN e TP), melhor o modelo.\n\n")
+        
+        # ROC Curves
+        report_lines.append("### 2. Curvas ROC\n\n")
+        report_lines.append("**Arquivos**: `roc_curve_1year.png` e `roc_curve_3years.png`\n\n")
+        report_lines.append("**O que mostram:**\n\n")
+        report_lines.append("As curvas ROC (Receiver Operating Characteristic) mostram o trade-off entre:\n")
+        report_lines.append("- **True Positive Rate (Recall)**: Taxa de acerto nos casos positivos\n")
+        report_lines.append("- **False Positive Rate**: Taxa de falsos alarmes\n\n")
+        report_lines.append("**Interpretação da AUC (Area Under Curve)**:\n")
+        report_lines.append("- **0.9 - 1.0**: Excelente discriminação\n")
+        report_lines.append("- **0.8 - 0.9**: Muito boa discriminação\n")
+        report_lines.append("- **0.7 - 0.8**: Boa discriminação\n")
+        report_lines.append("- **0.6 - 0.7**: Razoável\n")
+        report_lines.append("- **0.5**: Aleatório (jogar moeda)\n\n")
+        report_lines.append("**Como interpretar**: Quanto mais próxima a curva do canto superior esquerdo, melhor o modelo.\n\n")
+        
+        # Feature Importance
+        report_lines.append("### 3. Importância das Features\n\n")
+        report_lines.append("**Arquivos**: `feature_importance_1year.png` e `feature_importance_3years.png`\n\n")
+        report_lines.append("**O que mostram:**\n\n")
+        report_lines.append("Estes gráficos mostram quais variáveis têm maior influência nas predições dos modelos baseados em árvores ")
+        report_lines.append("(Decision Tree, Random Forest, Gradient Boosting).\n\n")
+        report_lines.append("**Como interpretar**:\n")
+        report_lines.append("- Features no topo da lista têm maior impacto nas predições\n")
+        report_lines.append("- Ajuda a entender quais fatores clínicos são mais relevantes\n")
+        report_lines.append("- Útil para validação clínica (as features importantes fazem sentido médico?)\n\n")
+        
+        # Conclusões e Recomendações
+        report_lines.append("---\n\n")
+        report_lines.append("## 💡 Conclusões e Recomendações\n\n")
+        
+        report_lines.append("### Principais Achados\n\n")
+        report_lines.append(f"1. **Modelo mais eficaz para 1 ano**: {best_1y_name} com AUC de {best_1y_auc:.3f}\n")
+        report_lines.append(f"2. **Modelo mais eficaz para 3 anos**: {best_3y_name} com AUC de {best_3y_auc:.3f}\n")
+        
+        # Comparar performance entre 1 e 3 anos
+        if best_1y_auc > best_3y_auc:
+            report_lines.append(f"3. **Predição de curto prazo** (1 ano) apresentou melhor performance que longo prazo (3 anos)\n")
+        else:
+            report_lines.append(f"3. **Predição de longo prazo** (3 anos) apresentou melhor performance que curto prazo (1 ano)\n")
+        
+        report_lines.append("\n### Recomendações de Uso\n\n")
+        
+        report_lines.append("**Para uso clínico:**\n\n")
+        report_lines.append(f"1. Utilizar o **{best_1y_name}** para identificar pacientes em risco de hospitalização no próximo ano\n")
+        report_lines.append(f"2. Utilizar o **{best_3y_name}** para planejamento de cuidados de longo prazo\n")
+        report_lines.append("3. Considerar intervenções preventivas para pacientes identificados como alto risco\n")
+        report_lines.append("4. Monitorar continuamente a performance dos modelos com novos dados\n\n")
+        
+        report_lines.append("### Limitações\n\n")
+        report_lines.append("⚠️ **Importante considerar:**\n\n")
+        report_lines.append("1. **Dataset pequeno** (117 observações) - limita a confiabilidade estatística\n")
+        report_lines.append("2. **Validação externa necessária** - testar em nova população antes de uso clínico\n")
+        report_lines.append("3. **Modelos não substituem julgamento clínico** - usar como ferramenta de apoio à decisão\n")
+        report_lines.append("4. **Re-treinamento periódico** - atualizar modelos com novos dados regularmente\n\n")
+        
+        report_lines.append("### Próximos Passos\n\n")
+        report_lines.append("1. ✅ Coletar mais dados para aumentar robustez\n")
+        report_lines.append("2. ✅ Validar em população externa\n")
+        report_lines.append("3. ✅ Desenvolver interface de uso clínico\n")
+        report_lines.append("4. ✅ Implementar monitoramento contínuo de performance\n")
+        report_lines.append("5. ✅ Realizar estudos de impacto clínico\n\n")
+        
+        report_lines.append("---\n\n")
+        report_lines.append("**Relatório gerado automaticamente pelo HospitalizationPredictor**\n")
+        
+        # Salvar relatório
+        report_content = ''.join(report_lines)
+        with open('outputs/RELATORIO_ANALISE.md', 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        print("✅ Relatório de análise gerado!")
+        print("   📄 outputs/RELATORIO_ANALISE.md")
+        
+        # Também exibir resumo no console
+        print("\n" + "=" * 70)
+        print("📋 RESUMO DA ANÁLISE")
+        print("=" * 70)
+        print(f"\n🏆 MELHOR MODELO - 1 ANO: {best_1y_name}")
+        print(f"   ROC-AUC: {best_1y_auc:.3f}")
+        print(f"   Accuracy: {best_1y_row['Test_Accuracy']:.1%}")
+        print(f"   F1-Score: {best_1y_row['Test_F1']:.3f}")
+        
+        print(f"\n🏆 MELHOR MODELO - 3 ANOS: {best_3y_name}")
+        print(f"   ROC-AUC: {best_3y_auc:.3f}")
+        print(f"   Accuracy: {best_3y_row['Test_Accuracy']:.1%}")
+        print(f"   F1-Score: {best_3y_row['Test_F1']:.3f}")
         
         print("\n" + "=" * 70)
-        print("🎉 PROCESSO CONCLUÍDO!")
+        print("📊 VISUALIZAÇÕES GERADAS")
         print("=" * 70)
+        print("\n1. Matrizes de Confusão:")
+        print("   - outputs/confusion_matrix_1year.png")
+        print("   - outputs/confusion_matrix_3years.png")
+        print("   → Mostram acertos (diagonal) e erros de cada modelo")
+        
+        print("\n2. Curvas ROC:")
+        print("   - outputs/roc_curve_1year.png")
+        print("   - outputs/roc_curve_3years.png")
+        print("   → Mostram capacidade de discriminação (quanto maior AUC, melhor)")
+        
+        print("\n3. Importância das Features:")
+        print("   - outputs/feature_importance_1year.png")
+        print("   - outputs/feature_importance_3years.png")
+        print("   → Mostram quais variáveis mais influenciam as predições")
+        
+        print("\n" + "=" * 70)
+        print("✅ ANÁLISE COMPLETA!")
+        print("=" * 70)
+        print("\n📄 Leia o relatório completo em: outputs/RELATORIO_ANALISE.md")
+        print("=" * 70)
+
 
 
 # ============================================================================
@@ -917,8 +1144,8 @@ def main():
     # 8. Salvar modelos
     predictor.save_models()
     
-    # 9. Relatório final
-    predictor.generate_summary_report()
+    # 9. Gerar relatório de análise
+    predictor.generate_analysis_report()
     
     print(f"\n⏰ Fim: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("\n✨ Obrigado por usar o HospitalizationPredictor! ✨\n")
