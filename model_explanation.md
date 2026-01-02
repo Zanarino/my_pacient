@@ -169,33 +169,6 @@ Fornece **regras clínicas interpretáveis** que médicos podem entender facilme
 **Por que escolhemos?**
 Pode alcançar a **melhor performance**, mas requer validação cuidadosa para evitar overfitting.
 
----
-
-### 5. XGBoost (Extreme Gradient Boosting)
-
-**O que é?**
-- Implementação otimizada e avançada de Gradient Boosting
-- Estado da arte para dados tabulares
-
-**Como funciona?**
-- Similar ao Gradient Boosting, mas com otimizações:
-  - Regularização automática
-  - Paralelização
-  - Tratamento de missing values
-  - Poda de árvores mais eficiente
-
-**Vantagens:**
-- ✅ Melhor performance em competições de ML
-- ✅ Mais rápido que Gradient Boosting tradicional
-- ✅ Menos propenso a overfitting (com regularização)
-- ✅ Lida bem com dados desbalanceados
-
-**Desvantagens:**
-- ❌ Complexo de interpretar
-- ❌ Muitos hiperparâmetros para ajustar
-
-**Por que escolhemos?**
-É o **estado da arte** para problemas de classificação com dados tabulares.
 
 ---
 
@@ -636,3 +609,4 @@ Este modelo fornece uma **ferramenta de apoio à decisão clínica** para identi
 ---
 
 **Desenvolvido com ❤️ para melhorar o cuidado de pacientes idosos**
+
