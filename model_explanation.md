@@ -169,6 +169,10 @@ Fornece **regras clínicas interpretáveis** que médicos podem entender facilme
 **Por que escolhemos?**
 Pode alcançar a **melhor performance**, mas requer validação cuidadosa para evitar overfitting.
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 806d7eb36d6abc359764b49adb13079e7089dc57
 ---
 
 ## 📊 Features (Variáveis Preditoras)
@@ -608,3 +612,4 @@ Este modelo fornece uma **ferramenta de apoio à decisão clínica** para identi
 ---
 
 **Desenvolvido com ❤️ para melhorar o cuidado de pacientes idosos**
+
